@@ -25,6 +25,7 @@ import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Picasso;
 
 import java.io.ByteArrayOutputStream;
+import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -66,11 +67,11 @@ public class MainActivity extends AppCompatActivity {
         FirebaseStorage firebaseStorage = FirebaseStorage.getInstance("gs://inclass11-cc638.appspot.com");
         StorageReference storageReference = firebaseStorage.getReference();
 
-        final StorageReference imageRepo = storageReference.child("images/camera.png");
+        final StorageReference imageRepo = storageReference.child("images/"+ UUID.randomUUID().toString().replace("-", ""));
 
 //        Converting the Bitmap into a bytearrayOutputstream....
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        photoBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        photoBitmap.compress(Bitmap.CompressFormat.PNG, 20, baos);
         byte[] data = baos.toByteArray();
 
         UploadTask uploadTask = imageRepo.putBytes(data);
