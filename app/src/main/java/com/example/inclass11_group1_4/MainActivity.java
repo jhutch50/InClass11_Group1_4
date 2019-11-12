@@ -2,6 +2,8 @@ package com.example.inclass11_group1_4;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -25,6 +27,7 @@ import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Picasso;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
@@ -34,29 +37,24 @@ public class MainActivity extends AppCompatActivity {
     Button buttonPhoto;
     ProgressBar progressBar;
     Bitmap bitmapUpload = null;
+    ArrayList<String> imageList = new ArrayList<String>();
+
+    RecyclerView mRecyclerView;
+    private RecyclerView.Adapter mAdapter;
+    private RecyclerView.LayoutManager mLayoutManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         buttonPhoto = findViewById(R.id.buttonPhoto);
-
+        mRecyclerView = findViewById(R.id.my_recycler_view);
         buttonPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 dispatchTakePictureIntent();
             }
         });
-
-//        buttonUpload = findViewById(R.id.buttonUpload);
-//        buttonUpload.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                uploadImage(getBitmapCamera());
-//            }
-//        });
-
         progressBar = findViewById(R.id.progressBar);
     }
 
@@ -92,12 +90,12 @@ public class MainActivity extends AppCompatActivity {
                 if (task.isSuccessful()){
                     Log.d(TAG, "Image Download URL"+ task.getResult());
                     String imageURL = task.getResult().toString();
-                    Log.d("demo", imageURL);
+                    imageList.add(imageURL);
+                    progressBar.setProgress(0);
+                    loadRecyclerView();
                 }
             }
         });
-
-//        ProgressBar......
 
         uploadTask.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
             @Override
@@ -110,8 +108,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-    //    TAKE PHOTO USING CAMERA...
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
@@ -130,5 +126,12 @@ public class MainActivity extends AppCompatActivity {
             bitmapUpload = imageBitmap;
             uploadImage(bitmapUpload);
         }
+    }
+
+    private void loadRecyclerView(){
+        mLayoutManager = new LinearLayoutManager(MainActivity.this);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+        mAdapter =  new imageAdaptor(imageList);
+        mRecyclerView.setAdapter(mAdapter);
     }
 }
