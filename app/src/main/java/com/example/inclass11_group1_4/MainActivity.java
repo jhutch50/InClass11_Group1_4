@@ -1,4 +1,4 @@
-package com.example.inclass11_group1_4.;
+package com.example.inclass11_group1_4;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,10 +30,7 @@ public class MainActivity extends AppCompatActivity {
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
     String TAG = "demo";
-
-    ImageView iv_TakePhoto;
-    Button buttonUpload;
-    ImageView iv_uploadedPhoto;
+    Button buttonPhoto;
     ProgressBar progressBar;
     Bitmap bitmapUpload = null;
 
@@ -42,40 +39,31 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        iv_TakePhoto = findViewById(R.id.iv_TakePhoto);
+        buttonPhoto = findViewById(R.id.buttonPhoto);
 
-        iv_TakePhoto.setOnClickListener(new View.OnClickListener() {
+        buttonPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 dispatchTakePictureIntent();
             }
         });
 
-        buttonUpload = findViewById(R.id.buttonUpload);
-        buttonUpload.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                uploadImage(getBitmapCamera());
-            }
-        });
+//        buttonUpload = findViewById(R.id.buttonUpload);
+//        buttonUpload.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                uploadImage(getBitmapCamera());
+//            }
+//        });
 
         progressBar = findViewById(R.id.progressBar);
-        iv_uploadedPhoto = findViewById(R.id.iv_uploadedPhoto);
     }
 
-    private Bitmap getBitmapCamera() {
-        //If photo not taken from camera...
-        if (bitmapUpload == null){
-            return ((BitmapDrawable) iv_TakePhoto.getDrawable()).getBitmap();
-        }
-//        Photo taken from camera...
-        return bitmapUpload;
-    }
 
 
     //    Upload Camera Photo to Cloud Storage....
     private void uploadImage(Bitmap photoBitmap){
-        FirebaseStorage firebaseStorage = FirebaseStorage.getInstance();
+        FirebaseStorage firebaseStorage = FirebaseStorage.getInstance("gs://inclass11-cc638.appspot.com");
         StorageReference storageReference = firebaseStorage.getReference();
 
         final StorageReference imageRepo = storageReference.child("images/camera.png");
@@ -86,17 +74,6 @@ public class MainActivity extends AppCompatActivity {
         byte[] data = baos.toByteArray();
 
         UploadTask uploadTask = imageRepo.putBytes(data);
-//        uploadTask.addOnFailureListener(new OnFailureListener() {
-//            @Override
-//            public void onFailure(@NonNull Exception e) {
-//                Log.e(TAG, "onFailure: "+e.getMessage());
-//            }
-//        }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-//            @Override
-//            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-//                Log.d(TAG, "onSuccess: "+"Image Uploaded!!!");
-//            }
-//        });
 
         Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
             @Override
@@ -114,8 +91,7 @@ public class MainActivity extends AppCompatActivity {
                 if (task.isSuccessful()){
                     Log.d(TAG, "Image Download URL"+ task.getResult());
                     String imageURL = task.getResult().toString();
-
-                    Picasso.get().load(imageURL).into(iv_uploadedPhoto);
+                    Log.d("demo", imageURL);
                 }
             }
         });
@@ -150,9 +126,8 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
-            iv_TakePhoto.setImageBitmap(imageBitmap);
-
             bitmapUpload = imageBitmap;
+            uploadImage(bitmapUpload);
         }
     }
 }
