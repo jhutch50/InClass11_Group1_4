@@ -64,8 +64,8 @@ public class MainActivity extends AppCompatActivity {
     private void uploadImage(Bitmap photoBitmap){
         FirebaseStorage firebaseStorage = FirebaseStorage.getInstance("gs://inclass11-cc638.appspot.com");
         StorageReference storageReference = firebaseStorage.getReference();
-
-        final StorageReference imageRepo = storageReference.child("images/"+ UUID.randomUUID().toString().replace("-", ""));
+        final String id =UUID.randomUUID().toString().replace("-", "");
+        final StorageReference imageRepo = storageReference.child("images/"+ id);
 
 //        Converting the Bitmap into a bytearrayOutputstream....
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
                 if (task.isSuccessful()){
                     Log.d(TAG, "Image Download URL"+ task.getResult());
                     String imageURL = task.getResult().toString();
-                    imageList.add(imageURL);
+                    imageList.add(id+"_"+imageURL);
                     progressBar.setProgress(0);
                     loadRecyclerView();
                 }
