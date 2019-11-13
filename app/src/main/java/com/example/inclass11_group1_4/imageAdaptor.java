@@ -1,5 +1,6 @@
 package com.example.inclass11_group1_4;
 
+import android.app.ProgressDialog;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,8 +23,10 @@ import static androidx.recyclerview.widget.RecyclerView.*;
 
 public class imageAdaptor extends RecyclerView.Adapter<imageAdaptor.ViewHolder> {
     ArrayList<String> imageList;
-    public imageAdaptor(ArrayList<String> imageList) {
+    private OnImageClickListener onImageClickListener;
+    public imageAdaptor(ArrayList<String> imageList,OnImageClickListener onImageClickListener) {
         this.imageList = imageList;
+        this.onImageClickListener = onImageClickListener;
     }
 
     @NonNull
@@ -38,11 +41,18 @@ public class imageAdaptor extends RecyclerView.Adapter<imageAdaptor.ViewHolder> 
     }
 
     @Override
-    public void onBindViewHolder(@NonNull imageAdaptor.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull final imageAdaptor.ViewHolder holder, final int position) {
         String[] arrOfStr = imageList.get(position).split("_");
         holder.pos = arrOfStr[0];
         String urltoImage = arrOfStr[1];
         Picasso.get().load(urltoImage).into(holder.imageView2);
+        holder.imageView2.setOnLongClickListener(new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                onImageClickListener.onImageClick(holder.pos,position);
+                return false;
+            }
+        });
 
     }
 
@@ -56,27 +66,10 @@ public class imageAdaptor extends RecyclerView.Adapter<imageAdaptor.ViewHolder> 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView2 = itemView.findViewById(R.id.imageView);
-            imageView2.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    FirebaseStorage firebaseStorage = FirebaseStorage.getInstance("gs://inclass11-cc638.appspot.com");
-                    StorageReference storageReference = firebaseStorage.getReference();
-                    StorageReference desertRef = storageReference.child("images/"+pos);
-                    Log.d("demo",pos);
-                    desertRef.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void aVoid) {
-                            imageView2.setImageDrawable(null);
-                            // File deleted successfully
-                        }
-                    }).addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception exception) {
-                            // Uh-oh, an error occurred!
-                        }
-                    });
-                }
-            });
         }
+    }
+
+    public static interface OnImageClickListener{
+        void onImageClick(String name,int position);
     }
 }

@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -16,11 +17,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.ListResult;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -30,7 +35,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.UUID;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements imageAdaptor.OnImageClickListener {
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
     String TAG = "demo";
@@ -42,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView mRecyclerView;
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
+    FirebaseStorage firebaseStorage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,27 +55,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         buttonPhoto = findViewById(R.id.buttonPhoto);
         mRecyclerView = findViewById(R.id.my_recycler_view);
+        firebaseStorage = FirebaseStorage.getInstance("gs://inclass11-cc638.appspot.com");
         buttonPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 dispatchTakePictureIntent();
             }
         });
+        getAllImages();
         progressBar = findViewById(R.id.progressBar);
     }
 
-
-
-    //    Upload Camera Photo to Cloud Storage....
     private void uploadImage(Bitmap photoBitmap){
-        FirebaseStorage firebaseStorage = FirebaseStorage.getInstance("gs://inclass11-cc638.appspot.com");
         StorageReference storageReference = firebaseStorage.getReference();
         final String id =UUID.randomUUID().toString().replace("-", "");
         final StorageReference imageRepo = storageReference.child("images/"+ id);
-
-//        Converting the Bitmap into a bytearrayOutputstream....
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        photoBitmap.compress(Bitmap.CompressFormat.PNG, 20, baos);
+        photoBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
         byte[] data = baos.toByteArray();
 
         UploadTask uploadTask = imageRepo.putBytes(data);
@@ -88,10 +90,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onComplete(@NonNull Task<Uri> task) {
                 if (task.isSuccessful()){
-                    Log.d(TAG, "Image Download URL"+ task.getResult());
                     String imageURL = task.getResult().toString();
                     imageList.add(id+"_"+imageURL);
-                    progressBar.setProgress(0);
                     loadRecyclerView();
                 }
             }
@@ -131,7 +131,66 @@ public class MainActivity extends AppCompatActivity {
     private void loadRecyclerView(){
         mLayoutManager = new LinearLayoutManager(MainActivity.this);
         mRecyclerView.setLayoutManager(mLayoutManager);
-        mAdapter =  new imageAdaptor(imageList);
+        mAdapter =  new imageAdaptor(imageList,this);
         mRecyclerView.setAdapter(mAdapter);
+        progressBar.setProgress(0);
+    }
+
+    @Override
+    public void onImageClick(String name, final int pos) {
+        StorageReference storageReference = firebaseStorage.getReference();
+        StorageReference desertRef = storageReference.child("images/"+name);
+        Log.d("demo",name);
+        desertRef.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                // File deleted successfully
+                imageList.remove(pos);
+                Toast.makeText(MainActivity.this, "Deleted", Toast.LENGTH_SHORT).show();
+                loadRecyclerView();
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception exception) {
+                // Uh-oh, an error occurred!
+            }
+        });
+    }
+
+    public void getAllImages(){
+        StorageReference storageReference = firebaseStorage.getReference().child("images");
+        storageReference.listAll()
+                .addOnSuccessListener(new OnSuccessListener<ListResult>() {
+                    @Override
+                    public void onSuccess(ListResult listResult) {
+                        getDownloadURL(listResult);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Uh-oh, an error occurred!
+                    }
+                });
+
+    }
+
+    public void getDownloadURL(ListResult listResult){
+        StorageReference storageReference = firebaseStorage.getReference();
+        for (StorageReference item : listResult.getItems()) {
+            final String[] name = item.toString().split("images/");
+            storageReference.child("images/"+name[1]).getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                @Override
+                public void onSuccess(Uri uri) {
+                    imageList.add(name[1]+"_"+uri.toString());
+                    loadRecyclerView();
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception exception) {
+                    // Handle any errors
+                }
+            });
+        }
     }
 }
