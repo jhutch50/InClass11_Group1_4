@@ -147,7 +147,7 @@ public class MainActivity extends AppCompatActivity implements imageAdaptor.OnIm
                 // File deleted successfully
                 imageList.remove(pos);
                 Toast.makeText(MainActivity.this, "Deleted", Toast.LENGTH_SHORT).show();
-                loadRecyclerView();
+                mAdapter.notifyDataSetChanged();
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
